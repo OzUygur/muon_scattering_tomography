@@ -1,0 +1,98 @@
+#define Analiz_cxx
+#include "Analiz.h"
+#include <TH2.h>
+#include <TStyle.h>
+#include <TCanvas.h>
+
+#include<bits/stdc++.h> // timer
+#include <cstdlib> // random number generator
+using namespace std;
+
+void Analiz::Loop(){
+// In a ROOT session, you can do:
+// root> .L Analiz.C
+// root> Analiz t
+// root> t.Loop();       
+if (fChain == 0) return;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   Long64_t nentries = fChain->GetEntriesFast();
+   Long64_t nbytes = 0, nb = 0;
+  // Create a 1D histogram
+  TH1F* hist1 = new TH1F("Ekin1", "Scattering Angle", 100, -0.05, 0.05);
+  // Create a 2D histogram
+  TH2F* hist2 = new TH2F("XY", "XY", 100, -300, 300, 100, -150, 150);
+  
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   for (Long64_t jentry=0; jentry<nentries;jentry++){
+      Long64_t ientry = LoadTree(jentry);
+      if (ientry < 0) break;
+      nb = fChain->GetEntry(jentry);   nbytes += nb;
+      
+//-------------------------------------------------------------------------------------------------------------
+auto N = jentry;
+auto clock_start = clock();
+  //Spatial Resolution sigma_xyz
+
+auto pitch_x  = 0.00;                           //pixel width (fiber to fiber distance)
+auto pitch_y  = 0.00;                           //pixel width (fiber to fiber distance)
+auto sigma_x = pitch_x/sqrt(12);               //sigma_x = pitch_x/sqrt(12)
+auto sigma_y = pitch_y/sqrt(12);              //sigma_y = pitch_y/sqrt(12)
+ 
+//auto K = 1 + (posZ3-posZ2)/(posZ2-posZ1);    //detector plane separation to top-bottom detector separation + 1
+//auto sigma_z  = ((sigma_x + sigma_y)/2)/sqrt(2*pow(K,2)-2*abs(K)+2.);         
+
+auto    RandomInt   = rand();                //creat Random Integer to make +/- (-1)^n
+
+auto g_x  = (sigma_x)*pow(-1,RandomInt);
+auto g_y  = (sigma_y)*pow(-1,RandomInt);
+auto g_z  = 0.;
+
+auto X1 = posX2 + g_x;
+auto X2 = posX3 + g_x;
+
+auto Y1 = posY2 + g_y;
+auto Y2 = posY3 + g_y;
+
+auto Z1 = posZ2 + g_z;
+auto Z2 = posZ3 + g_z;
+
+double learningRate = 0.01; // Learning rate for gradient descent
+double The = 0.001;
+double X = (X1 + X2)/2 + (Z2 - Z1)/2*tan(The); // Initial values, you may adjust these
+double Y = (Y1 + Y2)/2 + (Z2 - Z1)/2*tan(The);
+double Z = 0.;
+double Theta = 0.01;
+
+double Dx = 2*X/((Z-Z1)*X2 + (Z2-Z)*X1);
+double Dy = 2*Y/((Z-Z1)*Y2 + (Z2-Z)*Y1);
+    
+X = X - learningRate * Dx;
+Y = Y - learningRate * Dy;
+Theta = atan((Y2-Y)/(X2-X)) - atan((Y-Y1)/(X-X1));
+
+auto clock_end = clock();
+auto time_elapsed = 1000 * (clock_end - clock_start) / CLOCKS_PER_SEC;
+auto CPU_Time = time_elapsed;
+
+// Fill histograms
+
+if(fabs(Theta) > 0 and (Ekin2 - Ekin3) > 0.0154){
+
+hist1->Fill(Theta);
+hist2->Fill(-X, Y);
+       
+  }
+ 
+}
+
+    // Draw histograms
+    TCanvas* canvas1 = new TCanvas("canvas1", "Energy", 800, 600);
+    hist1->Draw("hist");
+
+    TCanvas* canvas2 = new TCanvas("canvas2", "2D Histogram Canvas", 600, 300);
+    hist2->Draw("CONT4Z");
+    hist2->SaveAs("XY.csv");
+
+   
+}

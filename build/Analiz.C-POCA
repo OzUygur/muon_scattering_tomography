@@ -1,0 +1,169 @@
+#define Analiz_cxx
+#include "Analiz.h"
+#include <TH2.h>
+#include <TStyle.h>
+#include <TCanvas.h>
+
+#include<bits/stdc++.h> // timer
+#include <cstdlib> // random number generator
+using namespace std;
+
+void Analiz::Loop(){
+// In a ROOT session, you can do:
+// root> .L Analiz.C
+// root> Analiz t
+// root> t.Loop();       
+if (fChain == 0) return;
+
+   Long64_t nentries = fChain->GetEntriesFast();
+   Long64_t nbytes = 0, nb = 0;
+   
+///////////////////////////////////////////////////////////////////////////////////////
+
+ // Create 1D histograms
+  TH1F* hist_Theta = new TH1F("Theta", "Scattering Angle (mrad)", 100, -100., 100.);
+  TH1F* hist_dE = new TH1F("dE", "Energy Loss (MeV)", 100, 0., 100.);
+  		
+  // Create a 2D histogram
+  TH2F* hist_XY = new TH2F("XY", "XY", 100, -300., 300., 100, -150., 150.);
+  
+///////////////////////////////////////////////////////////////////////////////////////
+   for (Long64_t jentry=0; jentry<nentries;jentry++){
+      Long64_t ientry = LoadTree(jentry);
+      if (ientry < 0) break;
+      nb = fChain->GetEntry(jentry);   nbytes += nb;
+      
+//---------------------------------------------------------------------------------------
+double N = jentry;
+double clock_start = clock();
+//Spatial Resolution sigma_xyz
+
+double pitch_x  = 0.5;                           //pixel width (fiber to fiber distance)
+double pitch_y  = 0.5;
+                           //pixel width (fiber to fiber distance)
+double sigma_x = pitch_x/sqrt(12);               //sigma_x = pitch_x/sqrt(12)
+double sigma_y = pitch_y/sqrt(12);              //sigma_y = pitch_y/sqrt(12)         
+double sigma_z  = 0.;    
+
+int n = (static_cast<double>(rand()) / RAND_MAX) * 2 - 1;
+double g_x  = (sigma_x)*pow(-1,n);
+double g_y  = (sigma_y)*pow(-1,n);
+double g_z  = 0;
+
+double X1 = posX1 + g_x;
+double X2 = posX2 + g_x;
+double X3 = posX3 + g_x;
+double X4 = posX4 + g_x;
+
+double Y1 = posY1 + g_y;
+double Y2 = posY2 + g_y;
+double Y3 = posY3 + g_y;
+double Y4 = posY4 + g_y;
+
+double Z1 = posZ1 + g_z;
+double Z2 = posZ2 + g_z;
+double Z3 = posZ3 + g_z;
+double Z4 = posZ4 + g_z;
+
+/////////////////////POCA//////////////////////////////////
+// Calculate position
+double u1[] = {(X2-X1), (Y2-Y1), (Z2-Z1)};
+double u2[] = {(X4-X3), (Y4-Y3), (Z4-Z3)};
+double w[] = {-(X3-X1), -(Y3-Y1), -(Z3-Z1)};
+
+double u1DOTu1 = (u1[0]*u1[0] + u1[1]*u1[1] + u1[2]*u1[2]);
+double u2DOTu2 = (u2[0]*u2[0] + u2[1]*u2[1] + u2[2]*u2[2]);
+double u1DOTu2 = (u1[0]*u2[0] + u1[1]*u2[1] + u1[2]*u2[2]);
+double u1DOTw = (u1[0]*w[0] + u1[1]*w[1] + u1[2]*w[2]);
+double u2DOTw = (u2[0]*w[0] + u2[1]*w[1] + u2[2]*w[2]);
+
+double a = u1DOTu1; 
+double b = u1DOTu2; 
+double c = u2DOTu2;
+
+double d = u1DOTw; 
+double e = u2DOTw;
+double delta = a*c-b*b;
+
+double t1 = (b*e-c*d)/delta; 
+double t2 = (a*e-b*d)/delta;
+
+double P01[] = {X1, Y1, Z1};
+double P02[] = {X3, Y3, Z3};
+
+double P1[] =  {(P01[0] + t1*u1[0]), (P01[1] + t1*u1[1]), (P01[1] + t1*u1[2])};  
+double P2[] =  {(P02[0] + t2*u2[0]), (P02[1] + t2*u2[1]), (P02[2] + t2*u2[2])}; 
+double POCA[] = {(P1[0]+P2[0])/2,(P1[1]+P2[1])/2,(P1[2]+P2[2])/2};
+
+double X = (POCA[0]); 
+double Y = (POCA[1]); 
+double Z = (POCA[2]);
+
+double L1 = sqrt(pow(u1[0],2)+pow(u1[1],2)+pow(u1[2],2));
+double L2 = sqrt(pow(u2[0],2)+pow(u2[1],2)+pow(u2[2],2));    
+
+double Theta1 = acos(u1[2]/L1);
+double Theta2 = acos(u2[2]/L2);
+//double Theta = 1000*acos((u1DOTu2)/(L1*L2));
+double Theta = 1000*(Theta2 - Theta1);
+/////////////////////////////////////////////////////
+
+        cout << N << " Of->" << nentries << "-> Entries" << endl;
+        double clock_end = clock();
+        double time_elapsed = 1000 * (clock_end - clock_start) / CLOCKS_PER_SEC;
+        double CPU_Time = time_elapsed;
+        double dE = 1000*(Ekin2-Ekin3);
+        
+        // Fill histograms
+        hist_dE->Fill(dE);
+        hist_dE->GetXaxis()->SetTitle("Energy Loss (MeV)");
+        hist_dE->GetYaxis()->SetTitle("Frequency");
+        double mean_dE = hist_dE->GetMean();
+        double std_dE = hist_dE->GetStdDev();
+      
+        hist_Theta->Fill(Theta);
+        hist_Theta->GetXaxis()->SetTitle("Scattering Angle (mrad)");
+        hist_Theta->GetYaxis()->SetTitle("Frequency");
+        double mean_Theta = hist_Theta->GetMean();
+        double std_Theta = hist_Theta->GetStdDev();
+        
+        double l1 = sqrt(pow((X2-X), 2) + pow((Y2-Y), 2) + pow((Z2-Z), 2));
+        double l2 = sqrt(pow((X-X1), 2) + pow((Y-Y1), 2) + pow((Z-Z1), 2));
+        double l = l1 + l2;
+        double dencity_air = 0.00125;
+        double Stp = 2.3;
+        double lE = Stp * dencity_air * l;
+        
+        //std::cout << "l = " << l << std::endl;
+        //std::cout << "lE = " << lE << std::endl;
+        
+        //if(pow(std_Theta/0.75,2) > pow((14/3)*sqrt(1/36.62),2)){  // Scattering denciry more than 
+         //if(dE > std_dE/*0.0154*/){  // Energy loss more than 
+         if(fabs(Theta) >= std_Theta and Ekin1 !=0 and Ekin2 !=0){
+        hist_XY->Fill(-X, Y);
+        hist_XY->SetTitle("XY Hit Positions (cm)");
+        hist_XY->GetXaxis()->SetTitle("X Hit Positions (cm)");
+        hist_XY->GetYaxis()->SetTitle("Y Hit Positions (cm)");
+        hist_XY->GetZaxis()->SetTitle("Frequency");
+        hist_XY->GetZaxis()->SetRangeUser(0, 50);
+          
+       }
+   }
+  
+    
+
+    // Draw histograms
+    TCanvas* canvas1 = new TCanvas("canvas1", "Energy Loss", 800, 600);
+    hist_dE->Draw("hist");
+    
+    TCanvas* canvas2 = new TCanvas("canvas2", "Theta", 800, 600);
+    hist_Theta->Draw("hist");
+    hist_Theta->Fit("gaus");
+
+    TCanvas* canvas3 = new TCanvas("canvas3", "Reconstructed Image", 600, 300);
+    hist_XY->Draw("CONT4Z");
+    hist_XY->SetStats(0); // Turn off statistics
+   // Redraw the histogram with the updated range
+    canvas3->Update();
+
+}

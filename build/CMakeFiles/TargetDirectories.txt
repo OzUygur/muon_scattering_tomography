@@ -1,0 +1,8 @@
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/mutomo.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/B1.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/edit_cache.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/rebuild_cache.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/list_install_components.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/install.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/install/local.dir
+/home/bilig/Desktop/mutomo/TSN/build/CMakeFiles/install/strip.dir

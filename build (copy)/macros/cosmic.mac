@@ -1,0 +1,31 @@
+/run/initialize
+/process/list
+
+/CRY/input returnNeutrons 0
+/CRY/input returnProtons 0
+/CRY/input returnGammas 0
+/CRY/input returnPions 0
+/CRY/input returnKaons 0
+/CRY/input returnMuons 1
+/CRY/input date 10-05-2008
+/CRY/input latitude 41.0
+/CRY/input altitude 0
+/CRY/input subboxLength 6.
+/CRY/update
+
+/mutomo/setup/WorldMaterial  G4_AIR
+/mutomo/setup/ScintMaterial  G4_PLASTIC_SC_VINYLTOLUENE
+#/mutomo/setup/TargetMaterial G4_PLASTIC_SC_VINYLTOLUENE
+
+
+
+/mutomo/setup/ScintillatorX  6.0 m
+/mutomo/setup/ScintillatorY  3.0 m
+/mutomo/setup/ScintillatorThickness 5.0 mm
+
+/mutomo/setup/ssd            50.0 cm
+/mutomo/setup/d              20.0 cm
+/mutomo/setup/D              3.0 m
+
+/run/beamOn 1800000
+
